@@ -40,6 +40,11 @@ type Service struct {
 	RemotePort int    `yaml:"remotePort"`
 }
 
+type PortForwardStatus struct {
+	ServiceName string
+	Err         error
+}
+
 func readConfig(filename string) (*Config, error) {
 	buf, err := ioutil.ReadFile(filename)
 	if err != nil {
@@ -81,7 +86,7 @@ func getPodNameFromService(clientset *kubernetes.Clientset, namespace, serviceNa
 	return podList.Items[0].Name, nil
 }
 
-func setupPortForward(service Service, wg *sync.WaitGroup) {
+func setupPortForward(service Service, wg *sync.WaitGroup, statusCh chan<- PortForwardStatus) {
 	defer wg.Done()
 
 	// Load kubeconfig and create a clientset
@@ -147,13 +152,25 @@ func setupPortForward(service Service, wg *sync.WaitGroup) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		if err := forwarder.ForwardPorts(); err != nil {
-			log.Fatalf("Error in port forwarding: %s", err)
-		}
+		err := forwarder.ForwardPorts()
+		// Send status to the channel when port-forwarding stops
+		statusCh <- PortForwardStatus{ServiceName: service.Name, Err: err}
 	}()
 
 	// Wait for forwarding to be ready
 	<-readyChan
+}
+
+// Helper function to find a service by name
+func findService(config *Config, serviceName string) Service {
+	for _, profile := range config.Profiles {
+		for _, service := range profile.Services {
+			if service.Name == serviceName {
+				return service
+			}
+		}
+	}
+	return Service{} // Return an empty service if not found
 }
 
 func main() {
@@ -165,19 +182,32 @@ func main() {
 	}
 
 	// Read the config
-	services, err := readConfig("services.yaml")
+	services, err := readConfig(fmt.Sprintf("%s/.config/.kpf", homedir.HomeDir()))
 	if err != nil {
 		log.Fatalf("Error reading YAML file: %s", err)
 	}
 
+	statusCh := make(chan PortForwardStatus)
 	var wg sync.WaitGroup
 	// Iterate over services and set up port forwarding
 	for _, profile := range services.Profiles {
 		for _, service := range profile.Services {
 			wg.Add(1)
-			go setupPortForward(service, &wg)
+			go setupPortForward(service, &wg, statusCh)
 		}
 	}
+
+	// Monitor port-forwarding status
+	go func() {
+		for status := range statusCh {
+			if status.Err != nil {
+				log.Printf("Port-forward for %s stopped: %v", status.ServiceName, status.Err)
+				// Restart port-forwarding for the service
+				wg.Add(1)
+				go setupPortForward(findService(services, status.ServiceName), &wg, statusCh)
+			}
+		}
+	}()
 
 	wg.Wait()
 }
