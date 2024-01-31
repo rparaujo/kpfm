@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -128,13 +129,15 @@ func setupPortForward(service Service, wg *sync.WaitGroup) {
 	readyChan := make(chan struct{})
 	ports := []string{fmt.Sprintf("%d:%d", service.LocalPort, service.RemotePort)}
 
+	logWriter := io.MultiWriter(os.Stdout)
+
 	forwarder, err := portforward.New(
 		spdy.NewDialer(upgrader, &http.Client{Transport: roundTripper}, "POST", req.URL()),
 		ports,
 		stopChan,
 		readyChan,
-		ioutil.Discard,
-		ioutil.Discard,
+		logWriter, // Use logWriter for standard output
+		logWriter, // Use logWriter for standard error
 	)
 	if err != nil {
 		log.Fatalf("Error setting up port forwarding: %s", err)
@@ -144,7 +147,6 @@ func setupPortForward(service Service, wg *sync.WaitGroup) {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		log.Printf("Forwarding %s:%d to %s:%d", "localhost", service.LocalPort, service.Name, service.RemotePort)
 		if err := forwarder.ForwardPorts(); err != nil {
 			log.Fatalf("Error in port forwarding: %s", err)
 		}
