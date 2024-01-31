@@ -13,7 +13,6 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
-	"time"
 
 	"gopkg.in/yaml.v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -175,14 +174,8 @@ func findService(config *Config, serviceName string) Service {
 
 func main() {
 
-	if os.Getenv("APP_MODE") == "debug" {
-		fmt.Println("You have 20 seconds to attach the Debugger...")
-		time.Sleep(20 * time.Second) // waits for 20 seconds
-		fmt.Println("Continuing...")
-	}
-
 	// Read the config
-	services, err := readConfig(fmt.Sprintf("%s/.config/.kpf", homedir.HomeDir()))
+	services, err := readConfig(fmt.Sprintf("%s/.config/.kpfm", homedir.HomeDir()))
 	if err != nil {
 		log.Fatalf("Error reading YAML file: %s", err)
 	}
