@@ -1,0 +1,8 @@
+profiles:
+  main:
+    services:
+      - name: postgresql
+        namespace: postgresql
+        localPort: 5432
+        remotePort: 5432
+      
