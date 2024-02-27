@@ -1,0 +1,32 @@
+Context-A-Info: &context-a-info
+  - ServiceName: postgresql
+    RemoteServicePort: 5432
+    Namespace: postgresql
+    LocalPort: 5432
+  - ServiceName: minio
+    RemoteServicePort: 9000
+    Namespace: minio
+    LocalPort: 9000
+  - ServiceName:
+    PodName: keycloak-0
+    RemoteServicePort: 8080
+    Namespace: keycloak
+    LocalPort: 5433
+
+Context-B-Info: &context-b-info
+  - ServiceName: postgresql
+    RemoteServicePort: 5432
+    Namespace: postgresql
+    LocalPort: 5432
+  - ServiceName: redis
+    RemoteServicePort: 6379
+    Namespace: redis
+    LocalPort: 3000
+
+Contexts:
+  - Name: cluster-01
+    Connections: *context-a-info
+  - Name: cluster-02
+    Connections: *context-a-info
+  - Name: cluster-03
+    Connections: *context-b-info  

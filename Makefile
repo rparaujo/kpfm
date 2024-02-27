@@ -11,12 +11,12 @@ build: go_mod
 	@echo "Built kpfm"
 
 run: build
-	@APP_MODE=release kpfm
+	@APP_MODE=release ./kpfm
 	@echo "Running kpfm in release mode"
 
 debug: go_mod
 	@go build -o kpfm -gcflags="all=-N -l" main.go
-	@APP_MODE=debug  kpfm
+	@APP_MODE=debug ./kpfm
 	@echo "Running kpfm in debug mode"
 
 clean:
