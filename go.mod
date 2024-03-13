@@ -1,8 +1,6 @@
 module github.com/rparaujo/kpfm
 
-go 1.21
-
-toolchain go1.21.5
+go 1.19.13
 
 require (
 	gopkg.in/yaml.v2 v2.4.0
