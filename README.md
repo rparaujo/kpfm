@@ -11,3 +11,8 @@ Usage:
 - Clone the repository
 - run `make install`
 - Add your config to the `~/.config/kpfm/config.yaml` file. Check the [sample](./sample/config.yml) file for the expected structure.
+
+Install:
+```
+go get github.com/rparaujo/kpfm
+```
